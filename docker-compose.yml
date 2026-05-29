@@ -1,0 +1,79 @@
+version: "3.9"
+
+# ═══════════════════════════════════════════════════════════
+#  Docker Compose — Sistema de Previsão de Anomalia
+#  Serviços: api (principal) + frontend (apoio)
+# ═══════════════════════════════════════════════════════════
+
+services:
+
+  # ─────────────────────────────────────────────
+  # Container Principal: API FastAPI + RandomForest
+  # ─────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: opssat_anomaly
+    restart: unless-stopped
+
+    environment:
+      - MODEL_PATH=/app/modelo_opssat.pkl
+      - APP_PORT=8000
+
+    ports:
+      - "8000:8000"   # host:container — acesse em http://localhost:8000
+
+    volumes:
+      - model_volume:/app/models
+
+    networks:
+      - opssat_network
+
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8000/docs')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # ─────────────────────────────────────────────
+  # Container de Apoio: Dashboard Streamlit
+  # ─────────────────────────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: opssat_frontend
+    restart: unless-stopped
+
+    environment:
+      # Aponta para o serviço "api" dentro da rede Docker
+      - API_URL=http://api:8000/predict
+      - STREAMLIT_PORT=8501
+
+    ports:
+      - "8501:8501"   # acesse em http://localhost:8501
+
+    depends_on:
+      api:
+        condition: service_healthy   # aguarda a API estar saudável antes de subir
+
+    networks:
+      - opssat_network
+
+# ─────────────────────────────────────────────
+# Rede compartilhada entre os containers
+# ─────────────────────────────────────────────
+networks:
+  opssat_network:
+    driver: bridge
+    name: opssat_network
+
+# ─────────────────────────────────────────────
+# Volume para persistência do modelo
+# ─────────────────────────────────────────────
+volumes:
+  model_volume:
+    driver: local

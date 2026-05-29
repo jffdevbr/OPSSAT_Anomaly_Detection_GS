@@ -1,0 +1,37 @@
+# ─────────────────────────────────────────────
+# Container de Apoio — Dashboard Streamlit
+# Frontend que consome a API de anomalia
+# ─────────────────────────────────────────────
+FROM python:3.13-slim
+
+LABEL description="Dashboard Streamlit para visualização de previsão de anomalia"
+LABEL version="1.0"
+
+WORKDIR /app
+
+# Variáveis de ambiente
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    # URL da API — aponta para o nome do serviço no Docker Compose
+    API_URL=http://api:8000/predict \
+    STREAMLIT_PORT=8501
+
+# Copia e instala dependências
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copia o código do frontend
+COPY app_front.py .
+
+# Expõe a porta do Streamlit
+EXPOSE 8501
+
+# Healthcheck do Streamlit
+HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health')" || exit 1
+
+# Inicia o Streamlit escutando em todas as interfaces
+CMD ["streamlit", "run", "app_front.py", \
+     "--server.port=8501", \
+     "--server.address=0.0.0.0", \
+     "--server.headless=true"]
