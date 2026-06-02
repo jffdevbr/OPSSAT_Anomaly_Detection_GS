@@ -29,8 +29,6 @@ docker compose up --build
 |-----------|------------------------------|
 | Dashboard | http://localhost:8501        |
 | API docs  | http://localhost:8000/docs   |
-| API JSON  | http://localhost:8000/predict|
-
 * Para testar o predict via terminal (bash):
 
 ```bash

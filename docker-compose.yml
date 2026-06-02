@@ -1,4 +1,4 @@
-version: "3.9"
+# version: "3.9"
 
 # ═══════════════════════════════════════════════════════════
 #  Docker Compose — Sistema de Previsão de Anomalia
